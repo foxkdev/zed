@@ -55,6 +55,7 @@ pub struct ProjectPanel {
     workspace: WeakView<Workspace>,
     width: Option<Pixels>,
     pending_serialization: Task<Option<()>>,
+    selecteds: Vec<Selection>,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -233,7 +234,7 @@ impl ProjectPanel {
                 last_worktree_root_id: Default::default(),
                 expanded_dir_ids: Default::default(),
                 selection: None,
-                selections: None,
+                selecteds: Vec::new(),
                 edit_state: None,
                 context_menu: None,
                 filename_editor,
@@ -818,18 +819,44 @@ impl ProjectPanel {
             Some(())
         });
     }
-    fn select_from_to(&mut self, index_from: Number, index_to: Number, cx: &mut ViewContext<Self>) {
-        if let Some((worktree_id, worktree_entries)) = self.visible_entries.get(index_from) {
-            if let Some(entry) = worktree_entries.get(index_to) {
-                self.selection = Some(Selection {
-                    worktree_id: *worktree_id,
-                    entry_id: entry.id,
-                });
-                self.selections = vec![(index_from, index_to)];
-                self.autoscroll(cx);
-                cx.notify();
+
+    fn is_selected_multiple(&self) -> bool {
+        match self.selection {
+            Some(Selection { entry_id, .. }) => {
+                self.selecteds.iter().any(|s| s.entry_id == entry_id)
             }
+            None => false,
         }
+    }
+    fn select_multiple(&mut self, entry: Selection) {
+        match self.selecteds.len() {
+            0..=1 => self.selecteds.push(entry),
+            3 => {
+                self.selecteds.clear();
+                self.selecteds.push(entry);
+            }
+            _ => unreachable!(),
+        }
+
+        println!("SELECTED LENGTH {}", self.selecteds.len())
+        // let (mut worktree_ix_from, mut entry_ix_from, _) =
+        //     self.index_for_selection(entry_from).unwrap_or_default();
+
+        // if let Some((worktree_id, worktree_entries)) = self.visible_entries.get(worktree_ix_from) {
+        //     if let Some(entry_from) = worktree_entries.get(entry_ix_to) {
+        //         self.selection = Some(Selection {
+        //             worktree_id: *worktree_id,
+        //             entry_id: entry_to.id,
+        //         });
+        //         // println!("selected {:?}", self.selection);
+        //         println!("select from {:?}", entry_ix_from);
+        //         println!("select to {:?}", entry_ix_to);
+        //         // self.selection_multiple = vec![(entry_ix_from, entry_ix_to)];
+        //         // self.autoscroll(cx);
+        //         // cx.notify();
+        //         //
+        //     }
+        // }
     }
 
     fn select_next(&mut self, _: &SelectNext, cx: &mut ViewContext<Self>) {
@@ -1322,9 +1349,10 @@ impl ProjectPanel {
                         kind: entry.kind,
                         is_ignored: entry.is_ignored,
                         is_expanded,
-                        is_selected: self.selection.map_or(false, |e| {
-                            e.worktree_id == snapshot.id() && e.entry_id == entry.id
-                        }),
+                        is_selected: self.is_selected_multiple()
+                            || self.selection.map_or(false, |e| {
+                                e.worktree_id == snapshot.id() && e.entry_id == entry.id
+                            }),
                         is_editing: false,
                         is_processing: false,
                         is_cut: self
@@ -1434,6 +1462,15 @@ impl ProjectPanel {
                         }
                         if !show_editor {
                             if event.down.modifiers.shift {
+                                match this.selection {
+                                    Some(selection) => {
+                                        this.select_multiple(selection);
+                                    }
+                                    None => {
+                                        println!("No hay selección presente.");
+                                    }
+                                }
+                                // self.select_multiple(self.selection);
                                 // self.selection.map(|selection| {
                                 //     // println!("{}", selection.worktree_id)
                                 //     // if selection.worktree_id == snapshot.id() {
