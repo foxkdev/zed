@@ -12,7 +12,7 @@ bundle_name=""
 zed_crate="zed"
 binary_name="Zed"
 
-# This must match the team in the provsiioning profile.
+# This must match the team in the provisioning profile.
 APPLE_NOTORIZATION_TEAM="MQ55VZLNZQ"
 
 # Function for displaying help info
@@ -78,11 +78,6 @@ export CXXFLAGS="-stdlib=libc++"
 version_info=$(rustc --version --verbose)
 host_line=$(echo "$version_info" | grep host)
 local_target_triple=${host_line#*: }
-
-if [ -z "$ZED_CLIENT_CHECKSUM_SEED" ]; then
-    echo "Missing ZED_CLIENT_CHECKSUM_SEED environment variable"
-    exit 1
-fi
 
 if [ "$local_arch" = true ]; then
     echo "Building for local target only."

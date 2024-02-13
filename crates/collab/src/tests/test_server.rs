@@ -10,10 +10,11 @@ use channel::{ChannelBuffer, ChannelStore};
 use client::{
     self, proto::PeerId, Client, Connection, Credentials, EstablishConnectionError, UserStore,
 };
+use collab_ui::channel_view::ChannelView;
 use collections::{HashMap, HashSet};
 use fs::FakeFs;
 use futures::{channel::oneshot, StreamExt as _};
-use gpui::{BackgroundExecutor, Context, Model, TestAppContext, View, VisualTestContext};
+use gpui::{BackgroundExecutor, Context, Model, Task, TestAppContext, View, VisualTestContext};
 use language::LanguageRegistry;
 use node_runtime::FakeNodeRuntime;
 
@@ -758,6 +759,16 @@ impl TestClient {
         // it might be nice to try and cleanup these at the end of each test.
         (view, cx)
     }
+}
+
+pub fn open_channel_notes(
+    channel_id: u64,
+    cx: &mut VisualTestContext,
+) -> Task<anyhow::Result<View<ChannelView>>> {
+    let window = cx.update(|cx| cx.active_window().unwrap().downcast::<Workspace>().unwrap());
+    let view = window.root_view(cx).unwrap();
+
+    cx.update(|cx| ChannelView::open(channel_id, None, view.clone(), cx))
 }
 
 impl Drop for TestClient {

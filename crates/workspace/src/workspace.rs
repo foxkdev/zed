@@ -118,6 +118,7 @@ actions!(
         ToggleRightDock,
         ToggleBottomDock,
         CloseAllDocks,
+        ToggleGraphicsProfiler,
     ]
 );
 
@@ -569,6 +570,27 @@ impl Workspace {
                 project::Event::Notification(message) => this.show_notification(0, cx, |cx| {
                     cx.new_view(|_| MessageNotification::new(message.clone()))
                 }),
+
+                project::Event::LanguageServerPrompt(request) => {
+                    let request = request.clone();
+
+                    cx.spawn(|_, mut cx| async move {
+                        let messages = request
+                            .actions
+                            .iter()
+                            .map(|action| action.title.as_str())
+                            .collect::<Vec<_>>();
+                        let index = cx
+                            .update(|cx| {
+                                cx.prompt(request.level, "", Some(&request.message), &messages)
+                            })?
+                            .await?;
+                        request.respond(index).await;
+
+                        Result::<(), anyhow::Error>::Ok(())
+                    })
+                    .detach()
+                }
 
                 _ => {}
             }
@@ -3395,6 +3417,7 @@ impl Workspace {
                     workspace.reopen_closed_item(cx).detach();
                 }),
             )
+            .on_action(|_: &ToggleGraphicsProfiler, cx| cx.toggle_graphics_profiler())
     }
 
     #[cfg(any(test, feature = "test-support"))]
@@ -4178,7 +4201,6 @@ pub fn join_channel(
                                 "This channel is private, and you do not have access. Please ask someone to add you and try again.".into()
                             },
                             ErrorCode::Disconnected => "Please check your internet connection and try again.".into(),
-                            ErrorCode::WrongReleaseChannel => format!("Others in the channel are using the {} release of Zed. Please switch to join this call.", err.error_tag("required").unwrap_or("other")).into(),
                             _ => format!("{}\n\nPlease try again.", err).into(),
                         };
                         cx.prompt(

@@ -485,7 +485,9 @@
       "ctrl-x ctrl-a": "assistant::InlineAssist", // zed specific
       "ctrl-x ctrl-c": "copilot::Suggest", // zed specific
       "ctrl-x ctrl-l": "editor::ToggleCodeActions", // zed specific
-      "ctrl-x ctrl-z": "editor::Cancel"
+      "ctrl-x ctrl-z": "editor::Cancel",
+      "ctrl-w": "editor::DeleteToPreviousWordStart",
+      "ctrl-u": "editor::DeleteToBeginningOfLine"
     }
   },
   {
@@ -498,7 +500,7 @@
     }
   },
   {
-    "context": "BufferSearchBar && !in_replace > VimEnabled",
+    "context": "BufferSearchBar && !in_replace",
     "bindings": {
       "enter": "vim::SearchSubmit",
       "escape": "buffer_search::Dismiss"
