@@ -3,10 +3,16 @@
 
 mod app_menu;
 mod keystroke;
+
 #[cfg(target_os = "linux")]
 mod linux;
+
 #[cfg(target_os = "macos")]
 mod mac;
+
+#[cfg(any(target_os = "linux", feature = "macos-blade"))]
+mod blade;
+
 #[cfg(any(test, feature = "test-support"))]
 mod test;
 
@@ -407,10 +413,7 @@ impl PlatformInputHandler {
     }
 
     pub(crate) fn flush_pending_input(&mut self, input: &str, cx: &mut WindowContext) {
-        let Some(range) = self.handler.selected_text_range(cx) else {
-            return;
-        };
-        self.handler.replace_text_in_range(Some(range), input, cx);
+        self.handler.replace_text_in_range(None, input, cx);
     }
 }
 
